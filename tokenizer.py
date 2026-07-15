@@ -36,7 +36,7 @@ class BPETokenizer:
 
     def encode(self, text):
         # Chunk text to avoid O(N^2) behavior on large corpus
-        chunk_size = 10000
+        chunk_size = 200
         raw_bytes = list(text.encode('utf-8'))
         
         if not self.merges:
