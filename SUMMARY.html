@@ -13,6 +13,7 @@
 </head>
 <body>
     <h1>LLM 2,000 Step Speedrun Summary</h1>
+    <p><strong>Final measured dev score:</strong> 2.026 bits per byte using <code>python evaluate.py --checkpoint ckpt.pt --text_file data/dev_eval.txt</code>. The checkpoint reports 2,000 optimizer steps and the scorer counts 1,935,104 parameters.</p>
     
     <h2>1. Architecture Overview</h2>
     <p>We engineered a highly optimized 3-layer Transformer architecture, rigorously staying under the 2,000,000 parameter budget. The model totals exactly <strong>1,935,104 parameters</strong>. To maximize learning efficiency in just 2,000 steps, standard transformer components were upgraded with modern, parameter-efficient primitives:</p>
@@ -32,7 +33,14 @@
         <li><strong>Optimization Strategy:</strong> AdamW optimizer with a Cosine Annealing learning rate scheduler (Warmup 200, Max LR 3e-3). This aggressive schedule is precisely calibrated to reach peak convergence at the 2,000-step mark.</li>
     </ul>
 
-    <h2>3. Attribution: Human vs. Machine Effort</h2>
+    <h2>3. Evaluation Record</h2>
+    <ul>
+        <li><strong>Starter baseline:</strong> 2.3718 BPB, 1,339,840 parameters, 2,000 steps.</li>
+        <li><strong>Final BPE checkpoint:</strong> 2.026 BPB, 1,935,104 parameters, 2,000 steps.</li>
+        <li><strong>Rejected alternate:</strong> <code>ckpt_run1.pt</code> was an incompatible byte-level checkpoint and scored worse in reconstruction testing, so it is not the submitted checkpoint.</li>
+    </ul>
+
+    <h2>4. Attribution: Human vs. Machine Effort</h2>
     <p>This solution was developed in collaboration with an AI coding assistant. The division of labor was as follows:</p>
     <ul>
         <li><strong>Human Driven (Engineering & Theory):</strong> The core optimization strategy—identifying Devanagari sequence fragmentation as the primary bottleneck, deciding to implement BPE over a pure byte tokenizer, calculating the exact parameter budget (d_model=256, 3 layers, GQA 8/2), and selecting the Cosine schedule to fit the 2,000-step cap. The strict adherence to the Plivo evaluation constraints (unmodified evaluate.py interface) was carefully managed by the human engineer.</li>
