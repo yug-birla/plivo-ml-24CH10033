@@ -35,35 +35,41 @@ class BPETokenizer:
             tokens = new_tokens
 
     def encode(self, text):
-        tokens = list(text.encode('utf-8'))
+        # Chunk text to avoid O(N^2) behavior on large corpus
+        chunk_size = 10000
+        raw_bytes = list(text.encode('utf-8'))
+        
         if not self.merges:
-            return tokens
+            return raw_bytes
             
-        while len(tokens) >= 2:
-            stats = collections.Counter(zip(tokens, tokens[1:]))
-            min_idx = float('inf')
-            best_pair = None
-            
-            # Find the pair with the earliest merge priority
-            for pair in stats:
-                if pair in self.merges and self.merges[pair] < min_idx:
-                    min_idx = self.merges[pair]
-                    best_pair = pair
-                    
-            if best_pair is None:
-                break
+        final_tokens = []
+        for offset in range(0, len(raw_bytes), chunk_size):
+            tokens = raw_bytes[offset:offset+chunk_size]
+            while len(tokens) >= 2:
+                stats = collections.Counter(zip(tokens, tokens[1:]))
+                min_idx = float('inf')
+                best_pair = None
                 
-            new_tokens = []
-            i = 0
-            while i < len(tokens):
-                if i < len(tokens) - 1 and (tokens[i], tokens[i+1]) == best_pair:
-                    new_tokens.append(min_idx)
-                    i += 2
-                else:
-                    new_tokens.append(tokens[i])
-                    i += 1
-            tokens = new_tokens
-        return tokens
+                for pair in stats:
+                    if pair in self.merges and self.merges[pair] < min_idx:
+                        min_idx = self.merges[pair]
+                        best_pair = pair
+                        
+                if best_pair is None:
+                    break
+                    
+                new_tokens = []
+                i = 0
+                while i < len(tokens):
+                    if i < len(tokens) - 1 and (tokens[i], tokens[i+1]) == best_pair:
+                        new_tokens.append(min_idx)
+                        i += 2
+                    else:
+                        new_tokens.append(tokens[i])
+                        i += 1
+                tokens = new_tokens
+            final_tokens.extend(tokens)
+        return final_tokens
 
     def decode(self, tokens):
         b = bytearray()
