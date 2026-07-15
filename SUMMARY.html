@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plivo 2,000 Step Speedrun - Summary</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; color: #333; line-height: 1.6; }
+        h1, h2, h3 { color: #2c3e50; }
+        ul { margin-bottom: 20px; }
+        .highlight { background-color: #f1f8ff; padding: 15px; border-left: 4px solid #0366d6; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <h1>LLM 2,000 Step Speedrun Summary</h1>
+    
+    <h2>1. Architecture Overview</h2>
+    <p>We engineered a highly optimized 3-layer Transformer architecture, rigorously staying under the 2,000,000 parameter budget. The model totals exactly <strong>1,935,104 parameters</strong>. To maximize learning efficiency in just 2,000 steps, standard transformer components were upgraded with modern, parameter-efficient primitives:</p>
+    <ul>
+        <li><strong>SwiGLU Activations:</strong> Replaced standard GELU/ReLU FFNs. We increased the hidden dimension to 512, drastically improving the model's capacity to represent multi-lingual structures.</li>
+        <li><strong>Grouped Query Attention (GQA):</strong> 8 Query heads and 2 KV heads. This reduced the parameter overhead of the attention mechanism, allowing us to reinvest those parameters into a wider embedding dimension (d_model=256).</li>
+        <li><strong>Rotary Positional Embeddings (RoPE):</strong> Replaced learned absolute positional embeddings, freeing up parameters while providing superior sequence length extrapolation.</li>
+        <li><strong>RMSNorm:</strong> Used instead of LayerNorm for slightly faster execution and fewer parameters.</li>
+    </ul>
+    
+    <h2>2. Key Optimizations for Bits-Per-Byte (BPB)</h2>
+    <div class="highlight">
+        <p><strong>BPE Tokenization (Vocab 1024):</strong> The most critical bottleneck was the representation of Devanagari (Hindi) text. A byte-level tokenizer fragments Devanagari characters into 3 bytes each, destroying the effective context window. We built a pure-Python Byte-Pair Encoding (BPE) tokenizer that compresses Devanagari natively. This reduces Hindi sequence lengths by ~3x, allowing the model to learn long-range dependencies within a smaller block size (256).</p>
+    </div>
+    <ul>
+        <li><strong>Weight Tying:</strong> The token embedding matrix and the final linear projection head share weights. This recovered exactly 262,144 parameters, allowing us to push the embedding size to 256.</li>
+        <li><strong>Optimization Strategy:</strong> AdamW optimizer with a Cosine Annealing learning rate scheduler (Warmup 200, Max LR 3e-3). This aggressive schedule is precisely calibrated to reach peak convergence at the 2,000-step mark.</li>
+    </ul>
+
+    <h2>3. Attribution: Human vs. Machine Effort</h2>
+    <p>This solution was developed in collaboration with an AI coding assistant. The division of labor was as follows:</p>
+    <ul>
+        <li><strong>Human Driven (Engineering & Theory):</strong> The core optimization strategy—identifying Devanagari sequence fragmentation as the primary bottleneck, deciding to implement BPE over a pure byte tokenizer, calculating the exact parameter budget (d_model=256, 3 layers, GQA 8/2), and selecting the Cosine schedule to fit the 2,000-step cap. The strict adherence to the Plivo evaluation constraints (unmodified evaluate.py interface) was carefully managed by the human engineer.</li>
+        <li><strong>Machine Assisted (Implementation):</strong> The AI was leveraged to rapidly generate the PyTorch boilerplate, implement the pure-Python BPE logic iteratively, construct the training loop, and format documentation (like this HTML file) to meet the tight speedrun deadline.</li>
+    </ul>
+</body>
+</html>

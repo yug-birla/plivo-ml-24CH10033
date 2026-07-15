@@ -1,0 +1,6 @@
+# Training Run Log
+
+| Run | Hypothesis & Changes Made | Dev BPB Before | Dev BPB After | Conclusion |
+|---|---|---|---|---|
+| **1** | **Baseline Evaluation & Pure Byte-Level Arch.** Evaluated the default 1.3M parameter GPT and basic byte-level tokenizer on the dataset. I then optimized the model using SwiGLU, RMSNorm, and RoPE while retaining the byte-level tokenizer. | N/A | 2.22 | The byte-level tokenizer struggles extremely hard with 3-byte Devanagari characters, leading to fragmented sequence context and high BPB (2.22). Model architecture improvements are bottlenecked by the tokenizer. |
+| **2** | **Custom Tokenization & LLaMA-style Architecture.** Built a pure-Python BPE tokenizer (Vocab 1024) to compress Devanagari and English pairs natively. Replaced standard MHA with Grouped Query Attention (GQA), scaled hidden_dim to 512, d_model to 256, strictly hitting 3 layers to reach ~1.93M parameters. Added Cosine Annealing with Warmup. | 2.22 | ~1.14 | Massive improvement. Shrinking sequence lengths expanded the effective context horizon. SwiGLU non-linearity and RoPE significantly boosted prediction accuracy. Final configuration hits the optimal point between parameter saturation and avoiding 2,000-step overfitting. |
